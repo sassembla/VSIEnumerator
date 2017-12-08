@@ -73,6 +73,11 @@ using System;
 		public void ReadyTests () {
 			testEnums.Clear();
 
+			// LoadAsset
+			testEnums.Enqueue(
+				LoadAsset()
+			);
+			
 			// LoadAssetAsync
 			testEnums.Enqueue(
 				LoadAssetAsync()
@@ -87,6 +92,32 @@ using System;
 			// testEnums.Enqueue(
 			// 	MyCustomYieldConstruction()
 			// );
+		}
+
+		private IEnumerator LoadAsset () {
+			Debug.Log("start LoadAsset.");
+			
+			Caching.CleanCache();
+			
+			var abRequest = UnityWebRequest.GetAssetBundle("https://github.com/sassembla/Autoya/raw/master/AssetBundles/Mac/1.0.0/bundlename");
+			abRequest.Send();
+
+			while (!abRequest.isDone) {
+				yield return null;
+			}
+
+			if (abRequest.isError) {
+				yield break;
+			}
+
+			Debug.Log("succeeded to download AssetBundle from web. start loading asset from AssetBundle.");
+			var loadedAb = ((DownloadHandlerAssetBundle)abRequest.downloadHandler).assetBundle;
+			
+			using (var autoDispose = new AutoDispose(loadedAb)) {
+				var asset = loadedAb.LoadAsset<Texture2D>("Assets/AutoyaTests/RuntimeData/AssetBundles/TestResources/textureName.png");
+
+				Debug.Log("succeeded to load asset. asset:" + asset);
+			}
 		}
 
 		private IEnumerator LoadAssetAsync () {
@@ -105,7 +136,7 @@ using System;
 				yield break;
 			}
 
-			Debug.Log("succeeded to download AssetBundle from web. start loading asset from AssetBundle.");
+			Debug.Log("succeeded to download AssetBundle from web. start loading asset from AssetBundle asynchronously.");
 			var loadedAb = ((DownloadHandlerAssetBundle)abRequest.downloadHandler).assetBundle;
 			
 			using (var autoDispose = new AutoDispose(loadedAb)) {
